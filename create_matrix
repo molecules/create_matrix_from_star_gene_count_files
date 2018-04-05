@@ -1,0 +1,50 @@
+#!/bin/env perl6
+
+multi MAIN
+#= Combine all of the ReadsPerGene.out.tab files in listed directories into one matrix file
+(*@dir where *[0].IO.d  #= One or more directories containing ReadsPerGene.out.tab files
+)
+{
+    my @matrix[;];
+
+    # First column contains row names
+    @matrix[0] = get_row_names_from(@dir[0]);
+
+    # Remaining columns correspond to counts from each sample
+    @matrix[ ++$ ] = get_counts_from($_) for @dir;
+
+    my $row_end = @matrix[0].end;
+    my $col_end = @matrix.end;
+
+    my @headers = ('gene_name', @dir.Slip);
+    say @headers.join("\t");
+
+    # For each line, print all of the matrix values
+    for 0 .. $row_end -> $row_index {
+        say @matrix[0 .. $col_end; $row_index].join("\t");
+    }
+}
+
+sub get_row_names_from ($dir) {
+    return get_column_with_index($dir,0);
+}
+
+sub get_counts_from ($dir) {
+    return get_column_with_index($dir,3);
+}
+
+sub get_column_with_index ($dir, $index) {
+    my @column;
+
+    my $filename = "$dir/ReadsPerGene.out.tab";
+
+    for $filename.IO.lines -> $line {
+
+        # Skip the first four lines
+        next if $++ < 4; 
+
+        my @values = $line.split: "\t";
+        @column.push(@values[$index]);
+    }
+    return @column; 
+}
